@@ -1,0 +1,101 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'application'
+
+configurations.implementation.setCanBeResolved(true)
+
+
+
+// tag::repositories[]
+repositories{
+    mavenCentral()
+   flatDir name: 'localRepository',dirs: '/home/bussiere/Workspace/CustomProjet/Speech/libs/'
+
+   exclusiveContent {
+      forRepository {
+         maven {
+            url 'https://mlt.jfrog.io/artifactory/mlt-mvn-releases-local'
+         }
+      }
+      filter {
+         includeGroup 'de.dfki.lt.jtok'
+      }
+   }
+}
+// end::repositories[]
+
+// tag::dependencies[]
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+
+
+dependencies {
+    implementation fileTree(dir: '/home/bussiere/Workspace/CustomProjet/Speech/libs/', include: '*.jar')
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    implementation "joda-time:joda-time:2.2"
+    implementation "junit:junit:4.12"
+    implementation 'com.google.code.gson:gson:2.9.0'
+    implementation 'org.apache.commons:commons-lang3:3.5'
+    testImplementation 'junit:junit:4.13'
+  implementation 'org.apache.logging.log4j:log4j-api:2.18.0'
+  implementation 'org.apache.logging.log4j:log4j-core:2.18.0'
+   implementation group: 'de.dfki.mary', name: 'voice-cmu-slt-hsmm', version: '5.2.1', {
+      exclude group: 'com.twmacinta', module: 'fast-md5'
+      exclude group: 'gov.nist.math', module: 'Jampack'
+   }
+    //compile 'commons-cli:commons-cli:1.3.1'
+    //compile 'de.dfki.mary:voice-cmu-slt-hsmm:5.2-beta3'
+
+
+}
+
+
+sourceSets.main.java.srcDirs = ['src']
+
+mainClassName = 'speech.App'
+
+run {
+    //jvmArgs = ['-D java.library.path=./lib/']
+    systemProperty 'java.library.path','/home/bussiere/Workspace/CustomProjet/Speech/libs/'
+}
+tasks.withType(Tar){
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.withType(Zip){
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+tasks.withType(Jar){
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+
+task fatJar(type: Jar) {
+  archiveVersion =  '0.1.0'
+  
+	manifest {
+    attributes('Implementation-Title': 'Gradle Jar File Example', 'Implementation-Version': archiveVersion,'Main-Class': mainClassName )
+    }
+    archiveBaseName  = project.name + '-all'
+    from { configurations.implementation.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
+// tag::jar[]
+jar {
+    archiveBaseName = 'speech'
+    archiveVersion =  '0.1.0'
+    manifest {
+    attributes(
+      'Class-Path': configurations.implementation.collect { it.getName() }.join(' '),
+      'Main-Class': mainClassName 
+    )
+  }
+}
+
+test {
+    useJUnitPlatform()
+}
+
